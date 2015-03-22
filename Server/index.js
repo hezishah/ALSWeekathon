@@ -9,9 +9,9 @@ app.get('/ping', function(req, res) {
 	res.send('OK');
 });
 
-app.post('/users/:userid/', function(req, res) {
-	// TODO: save data in database
-    res.send('Post data for user: ' + req.body.username);
+app.post('/users/:userId/', function(req, res) {
+	// TODO, validate request and push data to the db
+    res.send('Post data for user: ' + req.params["userId"]);
 });
 
 var server = app.listen(port, function () {
