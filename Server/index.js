@@ -32,7 +32,7 @@ app.post('/signals/:userid/',function(req, res){
 	for(i=0;i<data.length;i++)
 	{
 		data[i].userid = id;
-		data[i].timestamp = new Date().getTime();	
+		data[i].timestamp = req.body.timestamp;
 	}
 	
 	collection.insert(data, function(err, result) {
