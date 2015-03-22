@@ -1,7 +1,9 @@
 var express = require('express'),
+	sensorData = require('./sensorData.js'),
 	port = 8080;
 
 var app = express();
+//var sample = sensorData.createSensorDataSample();
 
 app.get('/ping', function(req, res) {
 	res.send('OK');
