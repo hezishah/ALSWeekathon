@@ -7,7 +7,11 @@ var db = monk('localhost:27017/als');
 
 var app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json())
+app.use(bodyParser.json());
+app.use(function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    next();
+});
 
 
 app.get('/ping', function (req, res) {
@@ -81,7 +85,7 @@ app.get('/user/:id', function (req, res) {
     var collection = db.get('users');
     console.log('get user ' + userid);
 
-    collection.findOne({ 'username': userid }, {}, function (e, data) {
+    collection.findOne({ '_id': userid }, {}, function (e, data) {
         console.log(data);
         if (!data) {
             return res.status(404).json({ error: 'user does not exist' }).send();
@@ -93,26 +97,42 @@ app.get('/user/:id', function (req, res) {
     });
 });
 
-app.post('/user/:id', function (req, res) {
+app.post('/user/', function (req, res) {
     if (!req.body) return res.sendStatus(400);
-    var userid = req.params.id;
-    if (!userid) {
-        return res.status(400).json({ error: 'user id is not valid' }).send();
+
+
+    //TODO: improve fields validation
+
+    if (!req.body.firstName || req.body.firstName.length < 2) {
+        return res.status(400).json({ error: 'First name is missing or not valid' }).send();
+    }
+
+    if (!req.body.lastName || req.body.lastName.length < 2) {
+        return res.status(400).json({ error: 'Last name is missing or not valid' }).send();
+    }
+
+    if (!req.body.email || req.body.email.length < 6) {
+        return res.status(400).json({ error: 'Email is missing or not valid' }).send();
+    }
+
+    if (!req.body.password || req.body.password.length < 2) {
+        return res.status(400).json({ error: 'Password is missing or not valid' }).send();
     }
 
     var collection = db.get('users');
-    console.log('adding user ' + userid + ' \n' + req.body);
+    console.log('adding user '+ req.body);
     collection.insert(req.body, function (err, result) {
-        console.log("Signals saved successfully!\n" + result);
-        res.send('OK');
+        console.log("User added successfully!\n" + result);
+		
+		delete result.password;
+        res.send(result);
     });
 });
 
-app.post('/validate/:id', function (req, res) {
+app.post('/validate/', function (req, res) {
     if (!req.body) return res.sendStatus(400);
-    var userid = req.params.id;
-    if (!userid) {
-        return res.status(400).json({ error: 'user id is not valid' }).send();
+    if (!req.body.email) {
+        return res.status(400).json({ error: 'email is not valid' }).send();
     }
 
     if (!req.body.password) {
@@ -120,8 +140,8 @@ app.post('/validate/:id', function (req, res) {
     }
 
     var collection = db.get('users');
-    collection.findOne({ 'username': userid }, {}, function (e, data) {
-        console.log('validating user ' + userid + ' pass:' + req.body.password + ' server data:' + data);
+    collection.findOne({ 'email': req.body.email }, {}, function (e, data) {
+        console.log('validating user ' + req.body.email + ' pass:' + req.body.password + ' server data:' + data);
         if (!data) {
             return res.status(404).json({ error: 'user does not exist' }).send();
         }
@@ -130,7 +150,8 @@ app.post('/validate/:id', function (req, res) {
             return res.status(404).json({ error: 'password is not correct' }).send();
         }
 
-        res.send('OK');
+		delete data.password;
+        res.send(data);
     });
 });
 

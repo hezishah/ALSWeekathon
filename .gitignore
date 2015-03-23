@@ -1,0 +1,4 @@
+*.log
+*.dll
+*.pdb
+Web/Web/obj/Debug/DesignTimeResolveAssemblyReferencesInput.cache
