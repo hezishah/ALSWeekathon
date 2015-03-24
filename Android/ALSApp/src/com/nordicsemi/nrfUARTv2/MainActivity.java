@@ -21,14 +21,38 @@ package com.nordicsemi.nrfUARTv2;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
 import java.text.DateFormat;
 import java.util.Date;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.FileReader;
 import java.io.BufferedWriter;
 import android.os.Environment;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+
+import com.opencsv.CSVParser;
+import com.opencsv.CSVReader;
+import com.google.gson.Gson;
+import java.util.LinkedList;
+import java.text.DateFormat;
+import java.util.Date;
+import android.net.http.AndroidHttpClient;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+
+import org.json.JSONObject;
+
 
 import com.nordicsemi.nrfUARTv2.UartService;
 
@@ -76,6 +100,18 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
     private static final int UART_PROFILE_DISCONNECTED = 21;
     private static final int STATE_OFF = 10;
 
+    private static final int PACKET_NUMBER_INDEX = 0;
+    private static final int GYROSCOPE_X_INDEX = 1;
+    private static final int GYROSCOPE_Y_INDEX = 2;
+    private static final int GYROSCOPE_Z_INDEX = 3;
+    private static final int ACCELEROMETER_X_INDEX = 4;
+    private static final int ACCELEROMETER_Y_INDEX = 5;
+    private static final int ACCELEROMETER_Z_INDEX = 6;
+    private static final int MAGNETOMETER_X_INDEX = 7;
+    private static final int MAGNETOMETER_Y_INDEX = 8;
+    private static final int MAGNETOMETER_Z_INDEX = 9;
+
+
     TextView mRemoteRssiVal;
     RadioGroup mRg;
     private int mState = UART_PROFILE_DISCONNECTED;
@@ -83,6 +119,7 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
     private UartService mService2 = null;
     private BluetoothDevice mDevice = null;
     private BluetoothDevice mDevice2 = null;
+    private Boolean mCollecting = true;
     private BluetoothAdapter mBtAdapter = null;
     private ListView messageListView;
     private ArrayAdapter<String> listAdapter;
@@ -131,8 +168,15 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
         				if (mDevice!=null)
         				{
         					mService.disconnect();
-        					
+
         				}
+                        if (mDevice2!=null)
+                        {
+                            mService2.disconnect();
+
+                        }
+                        mCollecting = false;
+                        UploadData();
         			}
                 }
             }
@@ -215,6 +259,7 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
        ////     mService.disconnect(mDevice);
         		mService = null;
                 mService2 = null;
+                mCollecting = false;
         }
     };
 
@@ -462,7 +507,7 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
                     Log.d(TAG, "... onActivityResultdevice.address==" + mDevice2 + "mserviceValue" + mService2);
                     ((TextView) findViewById(R.id.deviceName)).setText(mDevice2.getName()+ " - connecting");
                     mService2.connect(deviceAddress);
-
+                    mCollecting = true;
 
                 }
                 break;
@@ -518,6 +563,130 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
             })
             .setNegativeButton(R.string.popup_no, null)
             .show();
+        }
+    }
+
+    public static void makeRequest(String uri, String json) {
+        final String  uri_final = uri;
+        final String  json_final = json;
+        Thread thread = new Thread(new Runnable(){
+            @Override
+            public void run() {
+                try {
+                    //Your code goes here
+
+                    HttpClient httpclient = new DefaultHttpClient();
+                    HttpPost httppost = new HttpPost(uri_final);
+                    httppost.setHeader("Accept", "application/json");
+                    httppost.setHeader("Content-type", "application/json");
+
+                    try {
+                        // Add your data
+
+                        httppost.setEntity(new StringEntity(json_final));
+
+                        // Execute HTTP Post Request
+                        HttpResponse response = httpclient.execute(httppost);
+                        Log.d("response: ", response.getEntity().toString());
+                        // return response;
+
+                    } catch (ClientProtocolException e) {
+                        // TODO Auto-generated catch block
+                        Log.d("exception: " , e.getMessage());
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        Log.d("exception: " , e.getMessage());
+                    }
+                    catch (Exception e)
+                    {
+                        Log.d("exception: " , e.getMessage());
+                    }
+                    // return null;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Log.d("exception: " , e.getMessage());
+                }
+            }
+        });
+
+        thread.start();
+
+
+
+//        //HttpClient httpClient = new DefaultHttpClient();
+//       // HttpClient httpclient = HttpClientBuilder.create().build();
+//       // MinimalHttpClient httpclient = new HttpClientBuilder().build();
+//       // AndroidHttpClient
+//        try {
+//            HttpPost httpPost = new HttpPost(uri);
+//            httpPost.setEntity(new StringEntity(json));
+//            httpPost.setHeader("Accept", "application/json");
+//            httpPost.setHeader("Content-type", "application/json");
+//            return new DefaultHttpClient().execute(httpPost);
+//        } catch (UnsupportedEncodingException e) {
+//            e.printStackTrace();
+//        } catch (ClientProtocolException e) {
+//            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        return null;
+    }
+
+    public void UploadData()
+    {
+        try {
+            String yourFilePath = Environment.getExternalStorageDirectory() + "/" + "spiralStairs_CalInertialAndMag.csv";
+            CSVReader reader = new CSVReader(new FileReader(yourFilePath));
+
+            String [] nextLine;
+            //skip the first line - headers
+            reader.readNext();
+            LinkedList<Signal> signals = new LinkedList<Signal>();
+
+            for(int i= 0; i<3; i++){
+                nextLine = reader.readNext();
+                // while ((nextLine = reader.readNext()) != null) {
+                // nextLine[] is an array of values from the line
+                System.out.println(nextLine[0] + nextLine[1] + "etc...");
+                Signal signal = new Signal();
+                signal.setTimestamp(new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date()));
+                signal.setPacketId(Integer.parseInt(nextLine[PACKET_NUMBER_INDEX]));
+                signal.setAccelerometer(new XYZValues(Float.parseFloat(nextLine[ACCELEROMETER_X_INDEX]),
+                        Float.parseFloat(nextLine[ACCELEROMETER_Y_INDEX]),
+                        Float.parseFloat(nextLine[ACCELEROMETER_Z_INDEX])));
+                signal.setGyro(new XYZValues(Float.parseFloat(nextLine[GYROSCOPE_X_INDEX]),
+                        Float.parseFloat(nextLine[GYROSCOPE_Y_INDEX]),
+                        Float.parseFloat(nextLine[GYROSCOPE_Z_INDEX])));
+
+
+                signals.add(signal);
+
+            }
+
+            ServerRequest sr = new ServerRequest();
+            sr.setSignals(signals);
+            sr.setUserid("user");
+            sr.setTimestamp("111111");
+
+            //send the data to the server: Json, Post
+            Gson gson = new Gson();
+            String json = gson.toJson(sr);
+            Log.d("aa",json);
+            makeRequest("http://alsvm.cloudapp.net:8080/signals/user", json);
+            // HttpResponse a = makeRequest("http://alsvm.cloudapp.net:8080/signals/user", json);
+            // Log.d("httpResponse", a.toString());
+
+
+//            List myEntries = reader.readAll();
+//            System.out.println("size: " +myEntries.size());
+//            System.out.println("first item: "+myEntries.get(0));
+
+
+        }
+        catch (IOException e)
+        {
+            Log.d("exception: " , e.getMessage());
         }
     }
 }
