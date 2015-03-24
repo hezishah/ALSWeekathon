@@ -65,7 +65,11 @@ int mode = 0; // 0 = accel (default), 1 = gyro, 2 = mag, 3 = baro (temp and baro
 IMUduino my3IMU = IMUduino();
 
 /*#define LED_BUILTIN_IMUDUINO 4*/
-/*#define SERIAL_DEBUG*/
+#define SERIAL_DEBUG
+#define SEND_DATA_TO_BLE
+
+#define SAMPLE_FREQ_HZ 30
+#define SAMPLE_PERIOD_MS (1000/SAMPLE_FREQ_HZ)
 
 void setup() {
 	////  Mouse.begin();
@@ -81,24 +85,32 @@ void setup() {
 	/*Serial.println(F("IMUduino Print echo demo"));*/
 
 	delay(500);
-	my3IMU.init(true);
-	BTLEserial.begin();
+	BTLEserial.begin(230400);
 }
 
 
 static String prefix = "";
 static int initms = 0;
+static int lastms;
+
+static int pCount = 0;
 
 void loop() {
 
 	btleLoop();
 	if (status == ACI_EVT_CONNECTED && prefix.length()) {
-
+		int rawBuff[10];
+		memset(rawBuff, 0, sizeof(rawBuff));
 		my3IMU.getRawValues(raw_values);
 
+		int ms = millis() - initms;
+
+#if 1
+		rawBuff[0] = (prefix[0]&0xFF) + ((pCount++&0xFF)*256);
+		memcpy(rawBuff+1, raw_values , sizeof(rawBuff)-sizeof(int));
+#else
 		// Send raw IMU values to our app!
 		/*%X,%X,%X,%X,%X,%X,*/
-		int ms = millis() - initms;
 		sprintf(str, "[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d]",
 			ms,
 			raw_values[0],
@@ -113,12 +125,28 @@ void loop() {
 			raw_values[9],
 			raw_values[10]
 			);
-
+#endif
 		// Our btleWrite() method handles spliting chars into 20-byte chunks
+#ifdef SEND_DATA_TO_BLE		
+#if 1
+		BTLEserial.write((uint8_t *)rawBuff, sizeof(rawBuff));
+#else
 		btleWrite(str);
-#ifdef SERIAL_DEBUG
+#endif
+#endif
+#if 0 //def SERIAL_DEBUG
 		if (Serial) Serial.println(str);
 #endif
+		int deltams = ms - lastms;
+		if (((SAMPLE_PERIOD_MS * 2) - deltams) > 0)
+		{
+			delay(SAMPLE_PERIOD_MS * 2 - deltams);
+		}
+#ifdef SERIAL_DEBUG
+		else 
+			if (Serial) Serial.println("Sample Period Behind");
+#endif
+		lastms = ms;
 	}
 }
 
@@ -152,7 +180,7 @@ void LedToggle()
 Constantly checks for new events on the nRF8001
 */
 /**************************************************************************/
-
+static int first = 1;
 void btleLoop() {
 	// Tell the nRF8001 to do whatever it should be working on.
 	BTLEserial.pollACI();
@@ -171,6 +199,11 @@ void btleLoop() {
 #ifdef SERIAL_DEBUG	
 			if (Serial) Serial.println(F("* Connected!"));
 #endif
+			if (first)
+			{
+				my3IMU.init(true);
+				first = 0;
+			}
 		}
 		if (status == ACI_EVT_DISCONNECTED) {
 #ifdef SERIAL_DEBUG	
@@ -189,7 +222,7 @@ void btleLoop() {
 			if (Serial) Serial.print(prefix);
 #endif
 			LedToggle();
-			initms = millis();
+			initms = lastms = millis();
 		}
 
 		/*LedOff();*/
@@ -220,7 +253,6 @@ void btleWrite(String s) {
 
 		// write the data
 		BTLEserial.write(sendbuffer, sendbuffersize);
-		delay(20);
 		BTLEserial.pollACI(); // We need to let our BTLE serial object poll, otherwise our Arduino sketch freezes up after about 3 to 6 write() calls.
 		sendbuffersize = 0;
 		strSection = "";
