@@ -1,0 +1,7 @@
+C:\Users\hezi\AndroidStudioProjects\nRFUART_GoogleAPI_Android4.3+\app\build\intermediates\classes\debug
+C:\Users\hezi\AndroidStudioProjects\nRFUART_GoogleAPI_Android4.3+\app\build\intermediates\pre-dexed\debug\support-annotations-22.0.0-8e19a99a4e9a7131c41018d308e4d3b1b0a837d0.jar
+C:\Users\hezi\AndroidStudioProjects\nRFUART_GoogleAPI_Android4.3+\app\build\intermediates\pre-dexed\debug\opencsv-3.3-6d71d9c5a84641f5495884099507ec7bc46a7972.jar
+C:\Users\hezi\AndroidStudioProjects\nRFUART_GoogleAPI_Android4.3+\app\build\intermediates\pre-dexed\debug\gson-2.3.1-a5f63e52614b8675dbf26faf7aab66c2d92468b2.jar
+C:\Users\hezi\AndroidStudioProjects\nRFUART_GoogleAPI_Android4.3+\app\build\intermediates\pre-dexed\debug\internal_impl-22.0.0-5e0dd2d27b5a48faab415cbf99830680f1f75ca0.jar
+C:\Users\hezi\AndroidStudioProjects\nRFUART_GoogleAPI_Android4.3+\app\build\intermediates\pre-dexed\debug\commons-lang3-3.3.2-dcb53e4f6590963d59e4ae3d627e7b88fe9ae5b0.jar
+C:\Users\hezi\AndroidStudioProjects\nRFUART_GoogleAPI_Android4.3+\app\build\intermediates\pre-dexed\debug\classes-74cd009ae601fdba7e0d1bbc3c566e8ef02fe2de.jar

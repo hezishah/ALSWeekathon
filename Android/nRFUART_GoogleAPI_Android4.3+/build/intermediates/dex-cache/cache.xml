@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        jar="C:\Users\hezi\.gradle\caches\modules-2\files-2.1\org.apache.commons\commons-lang3\3.3.2\90a3822c38ec8c996e84c16a3477ef632cbc87a3\commons-lang3-3.3.2.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="90a3822c38ec8c996e84c16a3477ef632cbc87a3">
+        <dex dex="C:\Users\hezi\AndroidStudioProjects\nRFUART_GoogleAPI_Android4.3+\app\build\intermediates\pre-dexed\debug\commons-lang3-3.3.2-dcb53e4f6590963d59e4ae3d627e7b88fe9ae5b0.jar" />
+    </item>
+    <item
+        jar="C:\Users\hezi\.gradle\caches\modules-2\files-2.1\com.opencsv\opencsv\3.3\2858373af0681aafd3d79fdd533cc9127959c9ea\opencsv-3.3.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="2858373af0681aafd3d79fdd533cc9127959c9ea">
+        <dex dex="C:\Users\hezi\AndroidStudioProjects\nRFUART_GoogleAPI_Android4.3+\app\build\intermediates\pre-dexed\debug\opencsv-3.3-6d71d9c5a84641f5495884099507ec7bc46a7972.jar" />
+    </item>
+    <item
+        jar="C:\Users\hezi\AndroidStudioProjects\nRFUART_GoogleAPI_Android4.3+\app\build\intermediates\exploded-aar\com.android.support\support-v4\22.0.0\classes.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="4e86306289ace4aa0cfec44a05ed2b410d36989d">
+        <dex dex="C:\Users\hezi\AndroidStudioProjects\nRFUART_GoogleAPI_Android4.3+\app\build\intermediates\pre-dexed\debug\classes-74cd009ae601fdba7e0d1bbc3c566e8ef02fe2de.jar" />
+    </item>
+    <item
+        jar="C:\Users\hezi\AndroidStudioProjects\nRFUART_GoogleAPI_Android4.3+\app\build\intermediates\exploded-aar\com.android.support\support-v4\22.0.0\libs\internal_impl-22.0.0.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="b5b92f469d515a13d778900f6d50c03d12f35504">
+        <dex dex="C:\Users\hezi\AndroidStudioProjects\nRFUART_GoogleAPI_Android4.3+\app\build\intermediates\pre-dexed\debug\internal_impl-22.0.0-5e0dd2d27b5a48faab415cbf99830680f1f75ca0.jar" />
+    </item>
+    <item
+        jar="C:\Users\hezi\AppData\Local\Android\Sdk\extras\android\m2repository\com\android\support\support-annotations\22.0.0\support-annotations-22.0.0.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="685d0b2c590447e85284ed84712cb363ba04eff8">
+        <dex dex="C:\Users\hezi\AndroidStudioProjects\nRFUART_GoogleAPI_Android4.3+\app\build\intermediates\pre-dexed\debug\support-annotations-22.0.0-8e19a99a4e9a7131c41018d308e4d3b1b0a837d0.jar" />
+    </item>
+    <item
+        jar="C:\Users\hezi\.gradle\caches\modules-2\files-2.1\com.google.code.gson\gson\2.3.1\ecb6e1f8e4b0e84c4b886c2f14a1500caf309757\gson-2.3.1.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="ecb6e1f8e4b0e84c4b886c2f14a1500caf309757">
+        <dex dex="C:\Users\hezi\AndroidStudioProjects\nRFUART_GoogleAPI_Android4.3+\app\build\intermediates\pre-dexed\debug\gson-2.3.1-a5f63e52614b8675dbf26faf7aab66c2d92468b2.jar" />
+    </item>
+
+</items>
