@@ -1,52 +1,53 @@
-var server = {};
+var server = {
+    prefixUrl:'http://alsvm.cloudapp.net:8080/',
+    user: {
+        isConnected: false,
+        profile: {},
+        connect: function (username, password) {
 
-server.User = {
-    url: 'http://localhost:8080/',
-    isConnected: false,
-    profile: {},
-    connect: function (username, password) {
+            $('#menu-logout').show();
+        },
 
-        $('#menu-logout').show();
-    },
+        disconnect: function () {
+            this.isConnected = false;
+            this.profile = {};
+            setDisconnected();
+        },
 
-    disconnect: function () {
-        this.isConnected = false;
-        this.profile = {};
-        setDisconnected();
-    },
+        login: function (data) {
+            $.post(server.prefixUrl + 'validate', data, null)
+                .done(function (res) {
+                    server.user.isConnected = true;
+                    server.user.profile = res;
+                    setConnected();
+                })
+                .fail(function (xhr) {
+                    var response = xhr.responseJSON;
+                    alerts.add(response.error);
+                });
+        },
 
-    login: function (data) {
-        $.post(this.url + 'validate', data, null)
-           .done(function (res) {
-               server.User.isConnected = true;
-               server.User.profile = res;
-               setConnected();
-           })
-           .fail(function (xhr) {
-               var response = xhr.responseJSON;
-               alertUser(response.error);
-           });
-    },
-
-    register: function (data) {
-        $.post(this.url + 'user', data, function (res) {
-            server.User.isConnected = true;
-            server.User.profile = res;
-            setConnected(data.firstName);
-        })
-            .fail(function (xhr) {
-                var response = xhr.responseJSON;
-                alertUser(response.error);
-            });
+        register: function (data) {
+            $.post(server.prefixUrl + 'user', data, function (res) {
+                server.user.isConnected = true;
+                server.user.profile = res;
+                setConnected(data.firstName);
+            })
+                .fail(function (xhr) {
+                    var response = xhr.responseJSON;
+                    alerts.add(response.error);
+                });
+        }
     }
-}
+};
 
 var view = {
+    dataHandlers: {},
     change: function (name) {
         var contentEle = $('#content-container');
         // handle default page
         if (!name || name == "/") {
-            if (!server.User.isConnected) {
+            if (!server.user.isConnected) {
                 name = "register";
             } else {
                 // render control panel
@@ -54,18 +55,37 @@ var view = {
             }
         }
 
-        $('#alerts-container').empty();
+        alerts.clear();
 
         var file = 'templates/' + name + '.tmpl.html';
         $.when($.get(file))
             .done(function (tmplData) {
+                var data = {};
+                if (view.dataHandlers.hasOwnProperty(name) != -1) {
+                    $.get(server.prefixUrl + view.dataHandlers[name], function(result) {
+                        data = result;
+                    });
+                }
+
                 $.templates({ tmpl: tmplData });
-                contentEle.html($.render.tmpl());
+                contentEle.html($.render.tmpl(data));
             });
     },
 
     home: function () {
         $.History.trigger('/');
+    },
+
+    registerDataHandler: function (name, url) {
+        view.dataHandlers[name] = url;
+    },
+
+    removeDataHandler: function (name) {
+        delete view.dataHandlers[name];
+    },
+
+    clearViewHandlers: function() {
+        view.dataHandlers = {};
     }
 };
 
@@ -78,16 +98,22 @@ $(function () {
     init();
 });
 
-function alertUser(msg) {
-    var newAlert = $('<div></div>').addClass('alert').text(msg);
-    var dismiss = $('<span></span>').addClass('alert-dismiss').addClass('blue-link').text('dismiss');
-    dismiss.on('click', function () {
-        $(this).parent().remove();
-    });
-    newAlert.append(dismiss);
-    
-    $('#alerts-container').append(newAlert);
-}
+var alerts = {
+    add: function (msg) {
+        var newAlert = $('<div></div>').addClass('alert').text(msg);
+        var dismiss = $('<span></span>').addClass('alert-dismiss').addClass('blue-link').text('dismiss');
+        dismiss.on('click', function () {
+            $(this).parent().remove();
+        });
+        newAlert.append(dismiss);
+
+        $('#alerts-container').append(newAlert);
+    },
+
+    clear: function () {
+        $('#alerts-container').empty();
+    }
+};
 
 $.fn.serializeObject = function () {
     var o = {};
@@ -108,7 +134,7 @@ $.fn.serializeObject = function () {
 function register() {
     var formData = $("#register-form").serializeObject();
 
-    server.User.register(formData);
+    server.user.register(formData);
 
     return false;
 }
@@ -116,16 +142,16 @@ function register() {
 function login() {
     var formData = $("#login-form").serializeObject();
 
-    server.User.login(formData);
+    server.user.login(formData);
 
     return false;
 }
 
 function init() {
-    var profile = $.cookie("user");
+    var profile = JSON.parse($.cookie("user"));
     if (profile) {
-        server.User.isConnected = true;
-        server.User.profile = profile;
+        server.user.isConnected = true;
+        server.user.profile = profile;
         setConnected();
     } else {
         setDisconnected();
@@ -133,11 +159,12 @@ function init() {
 }
 
 function setConnected() {
-    $.cookie("user", server.User.profile);
-    $('#layout-user-box').text('Logged in as ' + server.User.profile.firstName);
-    var logout = $('<a href="#/" id="user-box-link" onclick="server.User.disconnect()">Logout</a>');
+    $.cookie("user", JSON.stringify(server.user.profile));
+    $('#layout-user-box').text('Logged in as ' + server.user.profile.firstName);
+    var logout = $('<a href="#/" id="user-box-link" onclick="server.user.disconnect()">Logout</a>');
     $('#layout-user-box').append(logout);
     view.home();
+    registerUserViewHandlers();
 }
 
 function setDisconnected() {
@@ -146,4 +173,12 @@ function setDisconnected() {
     $.removeCookie("user");
 
     view.home();
+}
+
+function registerUserViewHandlers() {
+    view.registerDataHandler('home', 'signals/' + server.user.profile['_id']);
+}
+
+function unregisterUserViewHandlers() {
+    view.clearViewHandlers();
 }

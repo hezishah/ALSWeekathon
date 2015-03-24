@@ -1,1 +1,23 @@
-﻿
+﻿<div id="home">
+    <span class="blue-link">Load signals</span>
+    <table id="signals-table">
+        <tr>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+        </tr>   
+        {{for signals}}
+        <tr>
+            <td>{{> field}}</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+        {{/for}}
+    </table>
+</div>

@@ -35,6 +35,7 @@ hr {
 
 .blue-link, .blue-link a {
     color: #00A5E0;
+    cursor: pointer;
 }
 
     .blue-link:hover, .blue-link a:hover {
@@ -165,6 +166,6 @@ hr {
         padding: 2px 5px;
     }
 
-#menu-logout {
+#signals-table {
     display: none;
 }

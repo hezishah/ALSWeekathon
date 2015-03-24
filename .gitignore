@@ -2,3 +2,9 @@
 *.dll
 *.pdb
 Web/Web/obj/Debug/DesignTimeResolveAssemblyReferencesInput.cache
+*.suo
+Web/Web/Web.csproj.user
+Web/Web/bin/Web.dll.config
+*.cs
+Web/Web/obj/Debug/Web.csproj.FileListAbsolute.txt
+Web/Web/Templates/register.tmpl.html
