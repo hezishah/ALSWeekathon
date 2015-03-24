@@ -4,11 +4,11 @@ package com.nordicsemi.nrfUARTv2;
  * Created by hezi on 24/03/2015.
  */
 public class XYZValues {
-    private float x;
-    private float y;
-    private float z;
+    private double x;
+    private double y;
+    private double z;
 
-    public XYZValues(float x, float y, float z)
+    public XYZValues(double x, double y, double z)
     {
         this.x = x;
         this.y = y;
@@ -16,26 +16,26 @@ public class XYZValues {
     }
 
 
-    public void setX(float x) {
+    public void setX(double x) {
         this.x = x;
     }
 
-    public float getX() {
+    public double getX() {
         return x;
     }
-    public void setY(float y) {
+    public void setY(double y) {
         this.y = y;
     }
 
-    public float getY() {
+    public double getY() {
         return y;
     }
 
-    public void setZ(float z) {
+    public void setZ(double z) {
         this.z = z;
     }
 
-    public float getZ() {
+    public double getZ() {
         return z;
     }
 

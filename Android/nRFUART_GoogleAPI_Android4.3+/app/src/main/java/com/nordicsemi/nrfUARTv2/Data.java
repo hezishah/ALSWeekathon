@@ -3,7 +3,7 @@ package com.nordicsemi.nrfUARTv2;
 /**
  * Created by hezi on 24/03/2015.
  */
-public class Signal {
+public class Data {
 
     private String timestamp;
     private int packetId;
@@ -68,4 +68,5 @@ public class Signal {
     public float getPressure() {
         return pressure;
     }
+
 }

@@ -67,5 +67,6 @@
     <string name="RSSI">_</string>
     <string name="ConnectLeft">Connect Left</string>
     <string name="ConnectRight">Connect Right</string>
+    <string name="Login">Login</string>
 
 </resources>

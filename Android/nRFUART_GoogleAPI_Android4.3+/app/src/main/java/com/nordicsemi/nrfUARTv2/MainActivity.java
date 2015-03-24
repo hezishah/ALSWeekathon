@@ -32,35 +32,22 @@ import android.os.Environment;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import com.opencsv.CSVParser;
 import com.opencsv.CSVReader;
 import com.google.gson.Gson;
 import java.util.LinkedList;
-import java.text.DateFormat;
-import java.util.Date;
-import android.net.http.AndroidHttpClient;
 
 import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
 
-import org.json.JSONObject;
-
-
-import com.nordicsemi.nrfUARTv2.UartService;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
 
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -70,21 +57,16 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.res.Configuration;
-import android.media.Ringtone;
-import android.media.RingtoneManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -101,15 +83,16 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
     private static final int STATE_OFF = 10;
 
     private static final int PACKET_NUMBER_INDEX = 0;
-    private static final int GYROSCOPE_X_INDEX = 1;
-    private static final int GYROSCOPE_Y_INDEX = 2;
-    private static final int GYROSCOPE_Z_INDEX = 3;
-    private static final int ACCELEROMETER_X_INDEX = 4;
-    private static final int ACCELEROMETER_Y_INDEX = 5;
-    private static final int ACCELEROMETER_Z_INDEX = 6;
-    private static final int MAGNETOMETER_X_INDEX = 7;
-    private static final int MAGNETOMETER_Y_INDEX = 8;
-    private static final int MAGNETOMETER_Z_INDEX = 9;
+    private static final int MILISEC_INDEX = 1;
+    private static final int GYROSCOPE_X_INDEX = 2;
+    private static final int GYROSCOPE_Y_INDEX = 3;
+    private static final int GYROSCOPE_Z_INDEX = 4;
+    private static final int ACCELEROMETER_X_INDEX = 5;
+    private static final int ACCELEROMETER_Y_INDEX = 6;
+    private static final int ACCELEROMETER_Z_INDEX = 7;
+    private static final int MAGNETOMETER_X_INDEX = 8;
+    private static final int MAGNETOMETER_Y_INDEX = 9;
+    private static final int MAGNETOMETER_Z_INDEX = 10;
 
 
     TextView mRemoteRssiVal;
@@ -119,7 +102,10 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
     private UartService mService2 = null;
     private BluetoothDevice mDevice = null;
     private BluetoothDevice mDevice2 = null;
+    private final byte mLeftTag = 'l';
+    private final byte mRightTag = 'r';
     private Boolean mCollecting = true;
+    private String mFilePrefix = null;
     private BluetoothAdapter mBtAdapter = null;
     private ListView messageListView;
     private ArrayAdapter<String> listAdapter;
@@ -176,6 +162,7 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
 
                         }
                         mCollecting = false;
+                        btnConnectRight.setEnabled(false);
                         UploadData();
         			}
                 }
@@ -263,21 +250,12 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
         }
     };
 
-    private Handler mHandler = new Handler() {
-        @Override
-        
-        //Handler events that received from UART service 
-        public void handleMessage(Message msg) {
-  
-        }
-    };
-
     private void generateNoteOnSD(String sFileName, String sBody){
             File root = new File(Environment.getExternalStorageDirectory(), "Sensors");
             if (!root.exists()) {
                 root.mkdirs();
             }
-            File gpxfile = new File(root, sFileName);
+            File gpxfile = new File(root, mFilePrefix+"-"+sFileName);
             try
             {
                 BufferedWriter bW;
@@ -286,7 +264,7 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
                 bW.newLine();
                 bW.flush();
                 bW.close();            }
-            catch(IOException e)
+            catch(IOException ignored)
             {
 
             }
@@ -339,6 +317,7 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
                             listAdapter.add("[" + currentDateTimeString + "] Disconnected to: " + mDevice.getName());
                             mState = UART_PROFILE_DISCONNECTED;
                             mService.close();
+                            mService2.close();
                             //setUiState();
 
                         }
@@ -348,61 +327,69 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
 
                 //*********************//
                 if (action.equals(UartService.ACTION_GATT_SERVICES_DISCOVERED)) {
-                    mService.enableTXNotification();
+                    if(mService!=null)
+                        mService.enableTXNotification();
+                    if(mService2!=null)
+                        mService2.enableTXNotification();
                 }
                 //*********************//
                 if (action.equals(UartService.ACTION_DATA_AVAILABLE)) {
 
                     final byte[] txValue = intent.getByteArrayExtra(UartService.EXTRA_DATA);
-                    String sensorTag = null;
-                    switch (txValue[0]) {
-                        case 'l':
-                        case 'r':
-                            sensorTag = String.format("%c", txValue[0]);
-                            break;
-                    }
-                    if (sensorTag != null) {
-                        int nPacket = (txValue[1] & 0xFF);
-                        int accX = bytesToShort(txValue[2],txValue[3]);
-                        int accY = bytesToShort(txValue[4],txValue[5]);
-                        int accZ = bytesToShort(txValue[6],txValue[7]);
-                        int gyrX = bytesToShort(txValue[8],txValue[9]);
-                        int gyrY = bytesToShort(txValue[10],txValue[11]);
-                        int gyrZ = bytesToShort(txValue[12],txValue[13]);
-                        int magX = bytesToShort(txValue[14],txValue[15]);
-                        int magY = bytesToShort(txValue[16],txValue[17]);
-                        int magZ = bytesToShort(txValue[18],txValue[19]);
-                        generateNoteOnSD(sensorTag,
-                                nPacket + "," +
-                                System.currentTimeMillis() + "," +
-                                gyrX + "," +
-                                gyrY + "," +
-                                gyrZ + "," +
-                                accX + "," +
-                                accY + "," +
-                                accZ + "," +
-                                magX + "," +
-                                magY + "," +
-                                magZ);
-                    }
-                 /*runOnUiThread(new Runnable() {
-                     public void run() {
-                         try {
-                         	String text = new String(txValue, "UTF-8");
-                         	String currentDateTimeString = DateFormat.getTimeInstance().format(new Date());
-                        	 	listAdapter.add("["+currentDateTimeString+"] RX: "+text);
-                        	 	messageListView.smoothScrollToPosition(listAdapter.getCount() - 1);
+                        String sensorTag = null;
+                        switch (txValue[0]) {
+                            case mLeftTag:
+                            case mRightTag:
+                                sensorTag = String.format("%c", txValue[0]);
+                                break;
+                        }
+                        if (sensorTag != null) {
+                            if (mCollecting) {
+                                int nPacket = (txValue[1] & 0xFF);
+                                int accX = bytesToShort(txValue[2], txValue[3]);
+                                int accY = bytesToShort(txValue[4], txValue[5]);
+                                int accZ = bytesToShort(txValue[6], txValue[7]);
+                                int gyrX = bytesToShort(txValue[8], txValue[9]);
+                                int gyrY = bytesToShort(txValue[10], txValue[11]);
+                                int gyrZ = bytesToShort(txValue[12], txValue[13]);
+                                int magX = bytesToShort(txValue[14], txValue[15]);
+                                int magY = bytesToShort(txValue[16], txValue[17]);
+                                int magZ = bytesToShort(txValue[18], txValue[19]);
+                                generateNoteOnSD(sensorTag,
+                                        nPacket + "," +
+                                                System.currentTimeMillis() + "," +
+                                                gyrX + "," +
+                                                gyrY + "," +
+                                                gyrZ + "," +
+                                                accX + "," +
+                                                accY + "," +
+                                                accZ + "," +
+                                                magX + "," +
+                                                magY + "," +
+                                                magZ);
+                            }
+                         /*runOnUiThread(new Runnable() {
+                             public void run() {
+                                 try {
+                                    String text = new String(txValue, "UTF-8");
+                                    String currentDateTimeString = DateFormat.getTimeInstance().format(new Date());
+                                        listAdapter.add("["+currentDateTimeString+"] RX: "+text);
+                                        messageListView.smoothScrollToPosition(listAdapter.getCount() - 1);
 
-                         } catch (Exception e) {
-                             Log.e(TAG, e.toString());
-                         }
-                     }
-                 });*/
+                                 } catch (Exception e) {
+                                     Log.e(TAG, e.toString());
+                                 }
+                             }
+                        });*/
+                        }
                 }
                 //*********************//
                 if (action.equals(UartService.DEVICE_DOES_NOT_SUPPORT_UART)) {
                     showMessage("Device doesn't support UART. Disconnecting");
-                    mService.disconnect();
+                    if(mService!=null)
+                        mService.disconnect();
+                    if(mService2!=null)
+                        mService2.disconnect();
                 }
 
 
@@ -494,7 +481,7 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
                 Log.d(TAG, "... onActivityResultdevice.address==" + mDevice + "mserviceValue" + mService);
                 ((TextView) findViewById(R.id.deviceName)).setText(mDevice.getName()+ " - connecting");
                 mService.connect(deviceAddress);
-                            
+                btnConnectRight.setEnabled(true);
 
             }
             break;
@@ -508,7 +495,8 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
                     ((TextView) findViewById(R.id.deviceName)).setText(mDevice2.getName()+ " - connecting");
                     mService2.connect(deviceAddress);
                     mCollecting = true;
-
+                    mFilePrefix = new SimpleDateFormat("yyyyMMddHHmmss").format(new java.util.Date());
+                    btnConnectRight.setEnabled(false);
                 }
                 break;
         case REQUEST_ENABLE_BT:
@@ -569,12 +557,11 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
     public static void makeRequest(String uri, String json) {
         final String  uri_final = uri;
         final String  json_final = json;
-        Thread thread = new Thread(new Runnable(){
+        Thread thread;
+        thread = new Thread(new Runnable(){
             @Override
             public void run() {
                 try {
-                    //Your code goes here
-
                     HttpClient httpclient = new DefaultHttpClient();
                     HttpPost httppost = new HttpPost(uri_final);
                     httppost.setHeader("Accept", "application/json");
@@ -608,7 +595,6 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
                 }
             }
         });
-
         thread.start();
 
 
@@ -636,28 +622,28 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
     public void UploadData()
     {
         try {
-            String yourFilePath = Environment.getExternalStorageDirectory() + "/" + "spiralStairs_CalInertialAndMag.csv";
+            String yourFilePath = Environment.getExternalStorageDirectory() + "/Sensors/" + mFilePrefix + "-" + (char)mLeftTag;
             CSVReader reader = new CSVReader(new FileReader(yourFilePath));
 
             String [] nextLine;
             //skip the first line - headers
             reader.readNext();
-            LinkedList<Signal> signals = new LinkedList<Signal>();
+            LinkedList<Data> signals = new LinkedList<Data>();
 
             for(int i= 0; i<3; i++){
                 nextLine = reader.readNext();
                 // while ((nextLine = reader.readNext()) != null) {
                 // nextLine[] is an array of values from the line
                 System.out.println(nextLine[0] + nextLine[1] + "etc...");
-                Signal signal = new Signal();
+                Data signal = new Data();
                 signal.setTimestamp(new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date()));
                 signal.setPacketId(Integer.parseInt(nextLine[PACKET_NUMBER_INDEX]));
-                signal.setAccelerometer(new XYZValues(Float.parseFloat(nextLine[ACCELEROMETER_X_INDEX]),
-                        Float.parseFloat(nextLine[ACCELEROMETER_Y_INDEX]),
-                        Float.parseFloat(nextLine[ACCELEROMETER_Z_INDEX])));
-                signal.setGyro(new XYZValues(Float.parseFloat(nextLine[GYROSCOPE_X_INDEX]),
-                        Float.parseFloat(nextLine[GYROSCOPE_Y_INDEX]),
-                        Float.parseFloat(nextLine[GYROSCOPE_Z_INDEX])));
+                signal.setAccelerometer(new XYZValues(Double.parseDouble(nextLine[ACCELEROMETER_X_INDEX]),
+                        Double.parseDouble(nextLine[ACCELEROMETER_Y_INDEX]),
+                        Double.parseDouble(nextLine[ACCELEROMETER_Z_INDEX])));
+                signal.setGyro(new XYZValues(Double.parseDouble(nextLine[GYROSCOPE_X_INDEX]),
+                        Double.parseDouble(nextLine[GYROSCOPE_Y_INDEX]),
+                        Double.parseDouble(nextLine[GYROSCOPE_Z_INDEX])));
 
 
                 signals.add(signal);
@@ -665,15 +651,21 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
             }
 
             ServerRequest sr = new ServerRequest();
-            sr.setSignals(signals);
-            sr.setUserid("user");
-            sr.setTimestamp("111111");
+            Sensor sensor = new Sensor();
+            sensor.setName("left");
+            sensor.setData(signals);
+           // sr.setData(signals);
+           // sr.setUserid("user");
+           // Sensor> sensors = new LinkedList<Sensor>();
+            //sensors.add(sensor);
+            sr.setSensors(sensor);
+            sr.setTimestamp(111111);
 
             //send the data to the server: Json, Post
             Gson gson = new Gson();
             String json = gson.toJson(sr);
             Log.d("aa",json);
-            makeRequest("http://alsvm.cloudapp.net:8080/signals/user", json);
+            makeRequest("http://alsvm.cloudapp.net:8080/signals/551018c2fd6cc07001fd96ec", json);
             // HttpResponse a = makeRequest("http://alsvm.cloudapp.net:8080/signals/user", json);
             // Log.d("httpResponse", a.toString());
 

@@ -1,36 +1,43 @@
 package com.nordicsemi.nrfUARTv2;
 
-import java.util.LinkedList;
-
 /**
  * Created by hezi on 24/03/2015.
  */
 public class ServerRequest {
-    private LinkedList<Signal> signals;
-    private String userid;
-    private String timestamp;
+   // private LinkedList<Data> data;
+   // private String userid;
+    private long timestamp;
+    private Sensor sensors;
 
-    public void setSignals(LinkedList<Signal> signals) {
-        this.signals = signals;
-    }
+//    public void setData(LinkedList<Data> data) {
+//        this.data = data;
+//    }
+//
+//    public LinkedList<Data> getData() {
+//        return data;
+//    }
+//
+//    public void setUserid(String userid) {
+//        this.userid = userid;
+//    }
+//
+//    public String getUserid() {
+//        return userid;
+//    }
 
-    public LinkedList<Signal> getSignals() {
-        return signals;
-    }
-
-    public void setUserid(String userid) {
-        this.userid = userid;
-    }
-
-    public String getUserid() {
-        return userid;
-    }
-
-    public void setTimestamp(String timestamp) {
+    public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
 
-    public String getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
+    }
+
+    public void setSensors(Sensor sensors) {
+        this.sensors = sensors;
+    }
+
+    public Sensor getSensors() {
+        return sensors;
     }
 }
