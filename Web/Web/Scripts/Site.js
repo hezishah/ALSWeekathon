@@ -1,5 +1,5 @@
 var server = {
-    prefixUrl:'http://alsvm.cloudapp.net:8080/',
+    prefixUrl: 'http://alsvm.cloudapp.net:8080/',
     user: {
         isConnected: false,
         profile: {},
@@ -43,37 +43,43 @@ var server = {
 
 var view = {
     dataHandlers: {},
+
     change: function (name) {
         var contentEle = $('#content-container');
         // handle default page
         if (!name || name == "/") {
             if (!server.user.isConnected) {
-                name = "register";
+                name = "/register";
             } else {
                 // render control panel
-                name = "home";
+                name = "/home";
             }
+
+            $.History.go(name);
+            return;
         }
 
         alerts.clear();
 
+        name = name.slice(1);
+
         var file = 'templates/' + name + '.tmpl.html';
         $.when($.get(file))
             .done(function (tmplData) {
-                var data = {};
-                if (view.dataHandlers.hasOwnProperty(name) != -1) {
-                    $.get(server.prefixUrl + view.dataHandlers[name], function(result) {
-                        data = result;
+                if (view.dataHandlers.hasOwnProperty(name)) {
+                    $.get(server.prefixUrl + view.dataHandlers[name], function (result) {
+                        $.templates({ tmpl: tmplData });
+                        contentEle.html($.render.tmpl(result));
                     });
+                } else {
+                    $.templates({ tmpl: tmplData });
+                    contentEle.html($.render.tmpl());
                 }
-
-                $.templates({ tmpl: tmplData });
-                contentEle.html($.render.tmpl(data));
             });
     },
 
     home: function () {
-        $.History.trigger('/');
+        $.History.go('/');
     },
 
     registerDataHandler: function (name, url) {
@@ -84,7 +90,7 @@ var view = {
         delete view.dataHandlers[name];
     },
 
-    clearViewHandlers: function() {
+    clearViewHandlers: function () {
         view.dataHandlers = {};
     }
 };
@@ -148,7 +154,11 @@ function login() {
 }
 
 function init() {
-    var profile = JSON.parse($.cookie("user"));
+    var profile;
+    var cookieData = $.cookie("user");
+    if (cookieData) {
+        profile = JSON.parse(cookieData);
+    }
     if (profile) {
         server.user.isConnected = true;
         server.user.profile = profile;

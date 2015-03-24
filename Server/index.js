@@ -13,7 +13,6 @@ app.use(function (req, res, next) {
     next();
 });
 
-
 app.get('/ping', function (req, res) {
     res.send('OK');
 });
@@ -28,8 +27,11 @@ app.get('/signals/:userid', function (req, res) {
     console.log('get signals for user ' + userid);
 
     collection.find({ 'userid': userid }, {}, function (e, data) {
-        //console.log(data);
-        res.send(data);
+        var resData = {
+            signals: data
+        };
+        console.log('sending back ' + data.length + ' items');
+        res.send(resData);
     });
 });
 
@@ -43,7 +45,6 @@ app.get('/signals/:userid/:from/:to', function (req, res) {
 
     if (!from || !to) return res.sendStatus(400);
 
-
     collection.find({ 'userid': userid, 'timestamp': { $gt: from, $lt: to } }, {}, function (e, data) {
         res.send(data);
     });
@@ -52,18 +53,57 @@ app.get('/signals/:userid/:from/:to', function (req, res) {
 app.post('/signals/:userid/', function (req, res) {
     if (!req.body) return res.sendStatus(400);
 
-    var collection = db.get('signals');
+    var signalscollection = db.get('signals');
+    var userscollection = db.get('users');
     var id = req.params.userid;
-    var data = req.body.signals;
+
+    if (!id) {
+        console.log('post signals - user id is missing');
+        return res.status(400).json({ error: 'user id is missing' }).send();
+    }
+
+    // check if user exist
+    userscollection.findOne({ '_id': userid }, {}, function (e, data) {
+        if (!data) {
+            console.log('user does not exist')
+            return res.status(404).json({ error: 'user does not exist' }).send();
+        }
+    });
+
+    var uploadTime = req.body.timestamp;
+
+    if (!req.body.sensors) {
+        console.log('post signals - sensors json is missing or invalid');
+        return res.status(400).json({ error: 'sensors json is missing or invalid' }).send();
+    }
+
+    var sensorName = req.body.sensors.name;
+    var data = req.body.sensors.data;
+
+    if (!data || data.length == 0) {
+        console.log('post signals - sensors data is missing or invalid');
+        return res.status(400).json({ error: 'sensors data is missing or invalid' }).send();
+    }
+
+    if (!uploadTime) {
+        console.log('post signals - upload timestamp is missing or invalid');
+        return res.status(400).json({ error: 'upload timestamp is missing or invalid' }).send();
+    }
+
+    if (!sensorName) {
+        console.log('post signals - sensor name is missing or invalid');
+        return res.status(400).json({ error: 'sensor name is missing or invalid' }).send();
+    }
 
     for (i = 0; i < data.length; i++) {
         data[i].userid = id;
-        data[i].timestamp = req.body.timestamp;
+        data[i].uploadtime = uploadTime;
+        data[i].sensorname = sensorName;
     }
 
-    collection.insert(data, function (err, result) {
+    signalscollection.insert(data, function (err, result) {
         console.log("Signals saved successfully!");
-        res.send('OK');
+        res.send('OK - ' + data.length + ' were saved');
     });
 });
 
@@ -120,11 +160,11 @@ app.post('/user/', function (req, res) {
     }
 
     var collection = db.get('users');
-    console.log('adding user '+ req.body);
+    console.log('adding user ' + req.body);
     collection.insert(req.body, function (err, result) {
         console.log("User added successfully!\n" + result);
-		
-		delete result.password;
+
+        delete result.password;
         res.send(result);
     });
 });
@@ -147,15 +187,13 @@ app.post('/validate/', function (req, res) {
         }
 
         if (data.password != req.body.password) {
-            return res.status(404).json({ error: 'password is not correct' }).send();
+            return res.status(400).json({ error: 'password is not correct' }).send();
         }
 
-		delete data.password;
+        delete data.password;
         res.send(data);
     });
 });
-
-
 
 var server = app.listen(port, function () {
 

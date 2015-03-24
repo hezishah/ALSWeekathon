@@ -1,22 +1,48 @@
 ﻿<div id="home">
-    <span class="blue-link">Load signals</span>
     <table id="signals-table">
         <tr>
-            <th></th>
-            <th></th>
-            <th></th>
-            <th></th>
-            <th></th>
-            <th></th>
-        </tr>   
+            <th>Sampling time</th>
+            <th>Upload time</th>
+            <th>Sensor</th>
+            <th>Packet</th>
+            <th>Accelerometer</th>
+            <th>Gyro</th>
+            <th>Magnetometer</th>
+            <th>Barometer</th>
+            <th>Pressure</th>
+        </tr>
         {{for signals}}
         <tr>
-            <td>{{> field}}</td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td>{{:timestamp}}</td>
+            <td>{{:uploadtime}}</td>
+            <td>{{:sensorname}}</td>
+            <td>{{:packetid}}</td>
+            <td>{{:accelerometer.x}}, {{:accelerometer.y}}, {{:accelerometer.z}}</td>
+            {{if gyro}}
+            <td>{{:gyro.x}}, {{:gyro.y}}, {{:gyro.z}}</td>
+            {{else}}
+            <td>NA</td>
+            {{/if}}
+            {{if magnetometer}}
+            <td>{{:magnetometer.x}}, {{:magnetometer.y}},{{:magnetometer.z}}</td>
+            {{else}}
+            <td>NA</td>
+            {{/if}}
+            {{if barometer}}
+            <td>{{:barometer}}</td>
+            {{else}}
+            <td>NA</td>
+            {{/if}}
+            {{if pressure}}
+            <td>{{:pressure}}</td>
+            {{else}}
+            <td>NA</td>
+            {{/if}}
+        </tr>
+
+        {{else}}
+        <tr>
+            <td>no data</td>
         </tr>
         {{/for}}
     </table>
