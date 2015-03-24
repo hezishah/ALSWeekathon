@@ -63,7 +63,7 @@ app.post('/signals/:userid/', function (req, res) {
     }
 
     // check if user exist
-    userscollection.findOne({ '_id': userid }, {}, function (e, data) {
+    userscollection.findOne({ '_id': id }, {}, function (e, data) {
         if (!data) {
             console.log('user does not exist')
             return res.status(404).json({ error: 'user does not exist' }).send();
