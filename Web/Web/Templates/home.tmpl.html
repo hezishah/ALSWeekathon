@@ -16,7 +16,7 @@
             <td>{{:timestamp}}</td>
             <td>{{:uploadtime}}</td>
             <td>{{:sensorname}}</td>
-            <td>{{:packetid}}</td>
+            <td>{{:packetId}}</td>
             <td>{{:accelerometer.x}}, {{:accelerometer.y}}, {{:accelerometer.z}}</td>
             {{if gyro}}
             <td>{{:gyro.x}}, {{:gyro.y}}, {{:gyro.z}}</td>
@@ -28,16 +28,8 @@
             {{else}}
             <td>NA</td>
             {{/if}}
-            {{if barometer}}
             <td>{{:barometer}}</td>
-            {{else}}
-            <td>NA</td>
-            {{/if}}
-            {{if pressure}}
             <td>{{:pressure}}</td>
-            {{else}}
-            <td>NA</td>
-            {{/if}}
         </tr>
 
         {{else}}
