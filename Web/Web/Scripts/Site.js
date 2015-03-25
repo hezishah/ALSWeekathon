@@ -60,14 +60,29 @@ var view = {
         }
 
         alerts.clear();
+        view.setLoading();
 
         name = name.slice(1);
+        var params = {};
+        if (name.indexOf('?') != -1) {
+            var paramsString = name.substring(name.indexOf('?'), name.length);
+            paramsString = paramsString.slice(1);
+            var splittedKV = paramsString.split('&');
+            for (var i = 0; i < splittedKV.length; i++) {
+                var item = splittedKV[i];
+                var kv = item.split('=');
+                params[kv[0]] = kv[1];
+            }
+
+            name = name.substring(0, name.indexOf('?'));
+        }
 
         var file = 'templates/' + name + '.tmpl.html';
         $.when($.get(file))
             .done(function (tmplData) {
                 if (view.dataHandlers.hasOwnProperty(name)) {
-                    $.get(server.prefixUrl + view.dataHandlers[name], function (result) {
+                    var dataUrl = getFinalDataUrl(view.dataHandlers[name], params);
+                    $.get(server.prefixUrl + dataUrl, function (result) {
                         $.templates({ tmpl: tmplData });
                         contentEle.html($.render.tmpl(result));
                     });
@@ -92,8 +107,32 @@ var view = {
 
     clearViewHandlers: function () {
         view.dataHandlers = {};
+    },
+
+    setLoading: function () {
+        var contentEle = $('#content-container');
+        contentEle.empty();
+        var loading = $('<div id="loading"></div>');
+        contentEle.append(loading);
     }
 };
+
+function getFinalDataUrl(templ, params) {
+    while (templ.indexOf('{') != -1) {
+        var start = templ.indexOf('{');
+        var end = templ.indexOf('}');
+        var token = templ.substring(start + 1, end);
+
+        if (token == "userid") {
+            templ = templ.replace('{userid}', server.user.profile['_id']);
+        } else {
+            var val = params[token];
+            templ = templ.replace('{' + token + '}', val);
+        }
+    }
+
+    return templ;
+}
 
 $.History.bind(function (state) {
     view.change(state);
@@ -186,7 +225,9 @@ function setDisconnected() {
 }
 
 function registerUserViewHandlers() {
-    view.registerDataHandler('home', 'signals/' + server.user.profile['_id']);
+    view.registerDataHandler('home', 'signals/batches/{userid}');
+    view.registerDataHandler('signals', 'signals/{userid}');
+    view.registerDataHandler('analyze', 'analysis/{userid}/{timestamp}');
 }
 
 function unregisterUserViewHandlers() {

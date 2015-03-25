@@ -19,6 +19,29 @@ app.get('/ping', function (req, res) {
     res.send('OK');
 });
 
+app.get('/signals/batches/:userid', function (req, res) {
+    var collection = db.get('signals');
+    var userid = req.params.userid;
+    if (!userid) {
+        return res.sendStatus(400);
+    }
+
+    console.log('get signals batches for user ' + userid);
+
+    collection.distinct('uploadtime', { 'userid': userid }, function (e, data) {
+        console.log('sending back ' + data.length + ' items');
+
+        var batches = [];
+
+        for (var i = 0; i < data.length; i++) {
+            var batch = data[i];
+            batches.push({ 'time': batch });
+        }
+
+        res.send({ 'batches': batches });
+    });
+});
+
 app.get('/signals/:userid', function (req, res) {
     var collection = db.get('signals');
     var userid = req.params.userid;
@@ -28,7 +51,7 @@ app.get('/signals/:userid', function (req, res) {
 
     console.log('get signals for user ' + userid);
 
-    collection.find({ 'userid': userid }, {}, function (e, data) {
+    collection.find({ 'userid': userid }, { "limit": 100 }, function (e, data) {
         var resData = {
             signals: data
         };
@@ -56,7 +79,6 @@ app.get('/signals/:userid/:sensor/:from/:to', function (req, res) {
         res.send(data);
     });
 });
-
 
 app.post('/signals/:userid/', function (req, res) {
     if (!req.body) return res.sendStatus(400);

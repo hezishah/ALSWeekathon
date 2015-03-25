@@ -166,3 +166,11 @@ hr {
         padding: 2px 5px;
     }
 
+
+    #loading {
+        height: 250px;
+        background-image: url('Images/loading.gif');
+        background-repeat: no-repeat;
+        background-position-y: 20px;
+        background-position: center;
+    }
