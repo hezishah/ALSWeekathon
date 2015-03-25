@@ -3,7 +3,6 @@ exports.process = function (data) {
     var sensorAboveAverage = [];
     for (var i = 0; i < data.length; i++) {
         var signal = data[i];
-        console.log(signal);
         signal.acsel3Square = signal.accelerometer.x * signal.accelerometer.x +
                                signal.accelerometer.y * signal.accelerometer.y +
                                signal.accelerometer.z * signal.accelerometer.z;

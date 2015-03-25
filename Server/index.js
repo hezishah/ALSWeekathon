@@ -35,7 +35,7 @@ app.get('/signals/batches/:userid', function (req, res) {
 
         for (var i = 0; i < data.length; i++) {
             var batch = data[i];
-            batches.push({ 'time': batch });
+            batches.push({ 'time': batch, userid: userid });
         }
 
         res.send({ 'batches': batches });
@@ -161,7 +161,6 @@ app.get('/user/:id', function (req, res) {
     console.log('get user ' + userid);
 
     collection.findOne({ '_id': userid }, {}, function (e, data) {
-        console.log(data);
         if (!data) {
             return res.status(404).json({ error: 'user does not exist' }).send();
         }

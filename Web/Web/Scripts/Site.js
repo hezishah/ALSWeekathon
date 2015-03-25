@@ -227,9 +227,68 @@ function setDisconnected() {
 function registerUserViewHandlers() {
     view.registerDataHandler('home', 'signals/batches/{userid}');
     view.registerDataHandler('signals', 'signals/{userid}');
-    view.registerDataHandler('analyze', 'analysis/{userid}/{timestamp}');
 }
 
 function unregisterUserViewHandlers() {
     view.clearViewHandlers();
+}
+
+function loadAnalysisGraph() {
+    $("#graph-btn").attr('disabled', '1');
+    var url = $("#batchSelect").val();
+    var newElemId = 'graph' + $('#batchSelect')[0].selectedIndex;
+    if ($('#' + newElemId).length > 0) {
+        $('#' + newElemId).empty();
+        $('#' + newElemId).addClass('loading');
+    } else {
+        var graph = $('<div></div>').attr('id', newElemId).addClass('graph');
+        graph.addClass('loading');
+        $('#signals').append(graph);
+    }
+    
+    var chart = c3.generate({
+        bindto: '#' + newElemId,
+        data: {
+            xs: {
+                'Left': 'x1',
+                'Right': 'x2',
+            },
+            columns: [
+                ['x1'],
+                ['x2'],
+                ['Left'],
+                ['Right']
+            ]
+        }
+    });
+
+    $.get(url, function (data) {
+        var x1 = ['x1'], x2 = ['x2'], left = ['Left'], right = ['Right'];
+
+        for (var i = 10; i < data.left.length; i++) {
+            x1.push(data.left[i].timeStamp);
+            left.push(data.left[i].stepDuration);
+        }
+
+        for (var i = 10; i < data.right.length; i++) {
+            x2.push(data.right[i].timeStamp);
+            right.push(data.right[i].stepDuration);
+        }
+
+        var newData = {
+            xs: {
+                'Left': 'x1',
+                'Right': 'x2',
+            },
+            columns: [
+                x1,
+                x2,
+                left,
+                right
+            ]
+        };
+        $('#' + newElemId).removeClass('loading');
+        chart.load(newData);
+        $("#graph-btn").removeAttr('disabled');
+    });
 }

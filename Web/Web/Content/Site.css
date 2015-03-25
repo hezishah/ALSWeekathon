@@ -167,10 +167,35 @@ hr {
     }
 
 
-    #loading {
-        height: 250px;
-        background-image: url('Images/loading.gif');
-        background-repeat: no-repeat;
-        background-position-y: 20px;
-        background-position: center;
-    }
+#loading, .loading {
+    height: 250px;
+    background-image: url('Images/loading.gif');
+    background-repeat: no-repeat;
+    background-position-y: 20px;
+    background-position: center;
+}
+
+.graph {
+    height: 300px;
+    margin-top: 20px;
+}
+
+#signals.msg {
+    margin-bottom: 25px;
+}
+
+#signals-form {
+    margin-bottom: 10px;
+}
+
+#signals-form select {
+    height: 30px;
+    width: 200px;
+}
+
+#signals-form button {
+    margin-top: 10px;
+    width: 40px;
+    height: 30px;
+}
+
