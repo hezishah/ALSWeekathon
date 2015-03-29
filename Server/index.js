@@ -1,4 +1,4 @@
-var express = require('express'), port = 8080;
+var express = require('express'), port = 80;
 var bodyParser = require('body-parser');
 var mongo = require('mongodb');
 var monk = require('monk');
@@ -9,6 +9,7 @@ var app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.static('public'));
 app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     next();

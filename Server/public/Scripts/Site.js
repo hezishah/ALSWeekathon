@@ -1,5 +1,5 @@
 var server = {
-    prefixUrl: 'http://alsvm.cloudapp.net:8080/',
+    prefixUrl: 'http://alsvm.cloudapp.net/',
     user: {
         isConnected: false,
         profile: {},

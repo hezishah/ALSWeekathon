@@ -5,7 +5,7 @@
     <div id="signals-form">
         <select id="batchSelect">
             {{for batches}}
-            <option value="http://alsvm.cloudapp.net:8080/analysis/{{:userid}}/{{:time}}">Sample #{{:#index+1}}</option>
+            <option value="http://alsvm.cloudapp.net/analysis/{{:userid}}/{{:time}}">Sample #{{:#index+1}}</option>
             {{/for}}
         </select>
         <button onclick="loadAnalysisGraph()" id="graph-btn">Go</button>
