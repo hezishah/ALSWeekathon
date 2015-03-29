@@ -5,7 +5,7 @@ package com.nordicsemi.nrfUARTv2;
  */
 public class Data {
 
-    private String timestamp;
+    private long timestamp;
     private int packetId;
     private XYZValues accelerometer;
     private XYZValues gyro;
@@ -13,11 +13,11 @@ public class Data {
     private float barometer;
     private float pressure;
 
-    public void setTimestamp(String timestamp) {
+    public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
 
-    public String getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
     }
 

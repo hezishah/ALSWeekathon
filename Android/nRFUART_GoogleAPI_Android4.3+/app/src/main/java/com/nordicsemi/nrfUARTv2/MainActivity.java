@@ -28,6 +28,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.FileReader;
 import java.io.BufferedWriter;
+
+import android.opengl.GLSurfaceView;
 import android.os.Environment;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -72,6 +74,8 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.widget.LinearLayout;
+
 public class MainActivity extends Activity implements RadioGroup.OnCheckedChangeListener {
     private static final int REQUEST_SELECT_DEVICE = 1;
     private static final int REQUEST_ENABLE_BT = 2;
@@ -94,6 +98,21 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
     private static final int MAGNETOMETER_Y_INDEX = 9;
     private static final int MAGNETOMETER_Z_INDEX = 10;
 
+    private static final int acc_off_x = 0;
+    private static final int acc_off_y = 0;
+    private static final int acc_off_z = -10000;
+    private static final float acc_scale_x = 3000;
+    private static final float acc_scale_y = 3000;
+    private static final float acc_scale_z = 3000;
+
+    private static final int magn_off_x = 150;
+    private static final int magn_off_y = -150;
+    private static final int magn_off_z = 0;
+    private static final float magn_scale_x = 350;
+    private static final float magn_scale_y = 370;
+    private static final float magn_scale_z = 320;
+
+    private static final float gyr_scale = 32.768f;/*(1<<(16-gyroSens=3))/250)*/
 
     TextView mRemoteRssiVal;
     RadioGroup mRg;
@@ -102,6 +121,8 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
     private UartService mService2 = null;
     private BluetoothDevice mDevice = null;
     private BluetoothDevice mDevice2 = null;
+    /*This values is the default user. The actual one should be received from the server*/
+    private String mUserID = "551018c2fd6cc07001fd96ec";
     private final byte mLeftTag = 'l';
     private final byte mRightTag = 'r';
     private Boolean mCollecting = true;
@@ -111,6 +132,8 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
     private ArrayAdapter<String> listAdapter;
     private Button btnConnectDisconnect,btnConnectRight,btnSend;
     private EditText edtMessage;
+    private GLSurfaceView mGLView;
+    private MyGLRenderer mRenderer;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -121,6 +144,18 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
             finish();
             return;
         }
+
+        LinearLayout l = (LinearLayout) findViewById(R.id.surfaceView);
+        mGLView = new GLSurfaceView(this);
+        mGLView.setEGLContextClientVersion(1);
+        mRenderer = new MyGLRenderer();
+        mGLView.setRenderer(mRenderer);
+
+//to add the view with your own parameters
+        /*l.addView(mGLView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));*/
+
+//or simply use
+        l.addView(mGLView, 0);
         messageListView = (ListView) findViewById(R.id.listMessage);
         listAdapter = new ArrayAdapter<String>(this, R.layout.message_detail);
         messageListView.setAdapter(listAdapter);
@@ -151,12 +186,12 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
             			startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);
         			} else {
         				//Disconnect button pressed
-        				if (mDevice!=null)
+        				if (mService!=null)
         				{
         					mService.disconnect();
 
         				}
-                        if (mDevice2!=null)
+                        if (mService2!=null)
                         {
                             mService2.disconnect();
 
@@ -186,7 +221,7 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
                         startActivityForResult(newIntent, REQUEST_SELECT_DEVICE2);
                     } else {
                         //Disconnect button pressed
-                        if (mDevice2!=null)
+                        if (mService2!=null)
                         {
                             mService2.disconnect();
 
@@ -296,7 +331,6 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
                             btnConnectDisconnect.setText("Disconnect");
                             edtMessage.setEnabled(true);
                             btnSend.setEnabled(true);
-                            ((TextView) findViewById(R.id.deviceName)).setText(mDevice.getName() + " - ready");
                             listAdapter.add("[" + currentDateTimeString + "] Connected to: " + mDevice.getName());
                             messageListView.smoothScrollToPosition(listAdapter.getCount() - 1);
                             mState = UART_PROFILE_CONNECTED;
@@ -313,7 +347,6 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
                             btnConnectDisconnect.setText("Connect Left");
                             edtMessage.setEnabled(false);
                             btnSend.setEnabled(false);
-                            ((TextView) findViewById(R.id.deviceName)).setText("Not Connected");
                             listAdapter.add("[" + currentDateTimeString + "] Disconnected to: " + mDevice.getName());
                             mState = UART_PROFILE_DISCONNECTED;
                             mService.close();
@@ -346,16 +379,47 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
                         if (sensorTag != null) {
                             if (mCollecting) {
                                 int nPacket = (txValue[1] & 0xFF);
-                                int accX = bytesToShort(txValue[2], txValue[3]);
-                                int accY = bytesToShort(txValue[4], txValue[5]);
-                                int accZ = bytesToShort(txValue[6], txValue[7]);
-                                int gyrX = bytesToShort(txValue[8], txValue[9]);
-                                int gyrY = bytesToShort(txValue[10], txValue[11]);
-                                int gyrZ = bytesToShort(txValue[12], txValue[13]);
-                                int magX = bytesToShort(txValue[14], txValue[15]);
-                                int magY = bytesToShort(txValue[16], txValue[17]);
-                                int magZ = bytesToShort(txValue[18], txValue[19]);
-                                generateNoteOnSD(sensorTag,
+                                double accX = bytesToShort(txValue[2], txValue[3]);
+                                double accY = bytesToShort(txValue[4], txValue[5]);
+                                double accZ = bytesToShort(txValue[6], txValue[7]);
+                                double gyrX = bytesToShort(txValue[8], txValue[9]);
+                                double gyrY = bytesToShort(txValue[10], txValue[11]);
+                                double gyrZ = bytesToShort(txValue[12], txValue[13]);
+                                double magX = bytesToShort(txValue[14], txValue[15]);
+                                double magY = bytesToShort(txValue[16], txValue[17]);
+                                double magZ = bytesToShort(txValue[18], txValue[19]);
+                                accX = (accX + acc_off_x)/ acc_scale_x;
+                                accY = (accY + acc_off_y)/ acc_scale_y;
+                                accZ = (accZ + acc_off_z)/ acc_scale_z;
+                                magX = (magX + magn_off_x)/ magn_scale_x;
+                                magY = (magY + magn_off_y)/ magn_scale_y;
+                                magZ = (magZ + magn_off_z)/ magn_scale_z;
+                                float gyrDt = 60/1000;
+                                gyrX /= gyr_scale;
+                                gyrY /= gyr_scale;
+                                gyrZ /= gyr_scale;
+                                float accroll = (float) (Math.atan2(accX, Math.sqrt(accY*accY+accZ*accZ)));
+                                float accpitch = (float) (Math.atan2(accY, accZ));
+                                float accyaw = (float) (Math.atan2( accY , accX));
+                                float accFactor = 0.2f;
+                                float gyrFactor = 0.8f;
+                                accroll  *=(180/Math.PI)*accFactor;
+                                accpitch *=(180/Math.PI)*accFactor;
+                                accyaw   *=(180/Math.PI)*accFactor;
+                                switch (sensorTag.charAt(0)) {
+                                    case mLeftTag:
+                                        mRenderer.mRoll = (float)(accroll + (gyrFactor*(mRenderer.mRoll+gyrDt*gyrX)));
+                                        mRenderer.mPitch = (float)(accpitch + (gyrFactor*(mRenderer.mPitch+gyrDt*gyrY)));;
+                                        mRenderer.mYaw = (float)(accyaw + (gyrFactor*(mRenderer.mYaw+gyrDt*gyrZ)));;
+                                        break;
+                                    case mRightTag:
+                                        mRenderer.mRoll2 = (float)(accroll + (gyrFactor*(mRenderer.mRoll2+gyrDt*gyrX)));
+                                        mRenderer.mPitch2 = (float)(accpitch + (gyrFactor*(mRenderer.mPitch2+gyrDt*gyrY)));;
+                                        mRenderer.mYaw2 = (float)(accyaw + (gyrFactor*(mRenderer.mYaw2+gyrDt*gyrZ)));;
+                                        break;
+                                }
+
+                                        generateNoteOnSD(sensorTag,
                                         nPacket + "," +
                                                 System.currentTimeMillis() + "," +
                                                 gyrX + "," +
@@ -479,7 +543,6 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
                 mDevice = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(deviceAddress);
                
                 Log.d(TAG, "... onActivityResultdevice.address==" + mDevice + "mserviceValue" + mService);
-                ((TextView) findViewById(R.id.deviceName)).setText(mDevice.getName()+ " - connecting");
                 mService.connect(deviceAddress);
                 btnConnectRight.setEnabled(true);
 
@@ -492,7 +555,6 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
                     mDevice2 = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(deviceAddress);
 
                     Log.d(TAG, "... onActivityResultdevice.address==" + mDevice2 + "mserviceValue" + mService2);
-                    ((TextView) findViewById(R.id.deviceName)).setText(mDevice2.getName()+ " - connecting");
                     mService2.connect(deviceAddress);
                     mCollecting = true;
                     mFilePrefix = new SimpleDateFormat("yyyyMMddHHmmss").format(new java.util.Date());
@@ -622,50 +684,31 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
     public void UploadData()
     {
         try {
-            String yourFilePath = Environment.getExternalStorageDirectory() + "/Sensors/" + mFilePrefix + "-" + (char)mLeftTag;
-            CSVReader reader = new CSVReader(new FileReader(yourFilePath));
-
-            String [] nextLine;
-            //skip the first line - headers
-            reader.readNext();
-            LinkedList<Data> signals = new LinkedList<Data>();
-
-            for(int i= 0; i<3; i++){
-                nextLine = reader.readNext();
-                // while ((nextLine = reader.readNext()) != null) {
-                // nextLine[] is an array of values from the line
-                System.out.println(nextLine[0] + nextLine[1] + "etc...");
-                Data signal = new Data();
-                signal.setTimestamp(new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date()));
-                signal.setPacketId(Integer.parseInt(nextLine[PACKET_NUMBER_INDEX]));
-                signal.setAccelerometer(new XYZValues(Double.parseDouble(nextLine[ACCELEROMETER_X_INDEX]),
-                        Double.parseDouble(nextLine[ACCELEROMETER_Y_INDEX]),
-                        Double.parseDouble(nextLine[ACCELEROMETER_Z_INDEX])));
-                signal.setGyro(new XYZValues(Double.parseDouble(nextLine[GYROSCOPE_X_INDEX]),
-                        Double.parseDouble(nextLine[GYROSCOPE_Y_INDEX]),
-                        Double.parseDouble(nextLine[GYROSCOPE_Z_INDEX])));
-
-
-                signals.add(signal);
-
-            }
+            String leftPath = Environment.getExternalStorageDirectory() + "/Sensors/" + mFilePrefix + "-" + (char)mLeftTag;
+            String rightPath = Environment.getExternalStorageDirectory() + "/Sensors/" + mFilePrefix + "-" + (char)mRightTag;
+            LinkedList<Data> leftSignals = readSensor(leftPath);
+            LinkedList<Data> rightSignals = readSensor(rightPath);
 
             ServerRequest sr = new ServerRequest();
-            Sensor sensor = new Sensor();
-            sensor.setName("left");
-            sensor.setData(signals);
-           // sr.setData(signals);
-           // sr.setUserid("user");
-           // Sensor> sensors = new LinkedList<Sensor>();
-            //sensors.add(sensor);
-            sr.setSensors(sensor);
-            sr.setTimestamp(111111);
+            Sensor leftSensor = new Sensor();
+            leftSensor.setName("left");
+            leftSensor.setData(leftSignals);
+
+            Sensor rightSensor = new Sensor();
+            rightSensor.setName("right");
+            rightSensor.setData(rightSignals);
+
+            LinkedList<Sensor> sensors = new LinkedList<Sensor>();
+            sensors.add(leftSensor);
+            sensors.add(rightSensor);
+            sr.setSensors(sensors);
+            sr.setTimestamp(new Date().getTime());
 
             //send the data to the server: Json, Post
             Gson gson = new Gson();
             String json = gson.toJson(sr);
             Log.d("aa",json);
-            makeRequest("http://alsvm.cloudapp.net:8080/signals/551018c2fd6cc07001fd96ec", json);
+            makeRequest("http://alsvm.cloudapp.net:80/signals/"+mUserID, json);
             // HttpResponse a = makeRequest("http://alsvm.cloudapp.net:8080/signals/user", json);
             // Log.d("httpResponse", a.toString());
 
@@ -680,5 +723,42 @@ public class MainActivity extends Activity implements RadioGroup.OnCheckedChange
         {
             Log.d("exception: " , e.getMessage());
         }
+    }
+
+    private LinkedList<Data> readSensor(String leftPath) throws IOException {
+        CSVReader reader = new CSVReader(new FileReader(leftPath));
+
+        String [] nextLine;
+        //skip the first line - headers
+        //reader.readNext();
+        LinkedList<Data> signals = new LinkedList<Data>();
+
+        //for(int i= 0; i<; i++){
+        //  nextLine = reader.readNext();
+        while ((nextLine = reader.readNext()) != null) {
+        // nextLine[] is an array of values from the line
+        // System.out.println(nextLine[0] + nextLine[1] + "etc...");
+        Data signal = new Data();
+        signal.setTimestamp(Long.parseLong(nextLine[MILISEC_INDEX]));
+        signal.setPacketId(Integer.parseInt(nextLine[PACKET_NUMBER_INDEX]));
+        signal.setAccelerometer(new XYZValues(Double.parseDouble(nextLine[ACCELEROMETER_X_INDEX]),
+                Double.parseDouble(nextLine[ACCELEROMETER_Y_INDEX]),
+                Double.parseDouble(nextLine[ACCELEROMETER_Z_INDEX])));
+        signal.setGyro(new XYZValues(Double.parseDouble(nextLine[GYROSCOPE_X_INDEX]),
+                Double.parseDouble(nextLine[GYROSCOPE_Y_INDEX]),
+                Double.parseDouble(nextLine[GYROSCOPE_Z_INDEX])));
+        signal.setMagnetometer(new XYZValues(Double.parseDouble(nextLine[MAGNETOMETER_X_INDEX]),
+                    Double.parseDouble(nextLine[MAGNETOMETER_Y_INDEX]),
+                    Double.parseDouble(nextLine[MAGNETOMETER_Z_INDEX])));
+        //for future usage:
+        //signal.setBarometer(Float.parseFloat(nextLine[BAROMETER_INDEX]));
+        //signal.setPressure(Float.parseFloat(nextLine[PRESSURE_INDEX]));
+
+
+
+            signals.add(signal);
+
+    }
+        return signals;
     }
 }

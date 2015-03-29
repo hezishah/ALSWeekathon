@@ -68,5 +68,6 @@
     <string name="ConnectLeft">Connect Left</string>
     <string name="ConnectRight">Connect Right</string>
     <string name="Login">Login</string>
+    <string name="title_activity_login">Login</string>
 
 </resources>

@@ -1,5 +1,7 @@
 package com.nordicsemi.nrfUARTv2;
 
+import java.util.LinkedList;
+
 /**
  * Created by hezi on 24/03/2015.
  */
@@ -7,7 +9,7 @@ public class ServerRequest {
    // private LinkedList<Data> data;
    // private String userid;
     private long timestamp;
-    private Sensor sensors;
+    private LinkedList<Sensor> sensors;
 
 //    public void setData(LinkedList<Data> data) {
 //        this.data = data;
@@ -33,11 +35,11 @@ public class ServerRequest {
         return timestamp;
     }
 
-    public void setSensors(Sensor sensors) {
+    public void setSensors(LinkedList<Sensor> sensors) {
         this.sensors = sensors;
     }
 
-    public Sensor getSensors() {
+    public LinkedList<Sensor> getSensors() {
         return sensors;
     }
 }
